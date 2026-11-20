@@ -1,0 +1,2284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phần mềm Quản lý dữ liệu dân cư</title>
+
+    <!-- Thư viện đọc Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Thư viện xuất Excel chuyên nghiệp -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <!-- Thư viện Biểu đồ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #1e40af;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 15px;
+            max-width: 1700px;
+            margin: 0 auto;
+            user-select: none;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success {
+            background-color: #16a34a;
+        }
+
+        .btn-warning {
+            background-color: #d97706;
+        }
+
+        .btn-info {
+            background-color: #0284c7;
+        }
+
+        .btn-outline {
+            background-color: #1e40af;
+            color: #ffffff;
+            border: 1px solid #1e40af;
+        }
+
+        .btn-toggle {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .filter-item div {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-item select,
+        .filter-item input {
+            padding: 5px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            outline: none;
+            background: #fff;
+            font-size: 11px;
+        }
+
+        .filter-item input[type="number"] {
+            width: 50px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-left-width: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        .stat-card.active-card {
+            background-color: #eff6ff;
+            border-color: #2563eb;
+        }
+
+        .stat-card h3 {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .stat-card p {
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        /* KHỐI BẢNG THỐNG KÊ CHUẨN HÓA */
+        .normalization-summary-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .norm-table {
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 320px;
+        }
+
+        .norm-table th, .norm-table td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 10px;
+        }
+
+        .norm-table th {
+            background-color: #1e3a8a;
+            color: white;
+            text-align: left;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 12px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .search-box {
+            padding: 6px 12px;
+            border: 2px solid #2563eb;
+            border-radius: 6px;
+            width: 240px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .table-responsive {
+            max-height: 550px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        tr.duplicate-cccd {
+            background-color: #fef2f2 !important;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .badge-age { background-color: #e0e7ff; color: #3730a3; }
+        .badge-nam { background-color: #dbeafe; color: #1e40af; }
+        .badge-nu { background-color: #fce7f3; color: #be185d; }
+        .badge-hk { background-color: #dcfce7; color: #15803d; }
+        .badge-tt { background-color: #fef3c7; color: #b45309; }
+        .badge-chu-ho-main { background-color: #1e40af; color: #ffffff; }
+        .badge-thanh-vien { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+        .badge-dangvien { background-color: #fee2e2; color: #991b1b; }
+        .badge-nguoicocong { background-color: #fef3c7; color: #92400e; }
+        .badge-khokhan { background-color: #ffedd5; color: #c2410c; }
+        .badge-dantoc { background-color: #f3e8ff; color: #6b21a8; }
+        .badge-chu-tro { background-color: #dcfce7; color: #166534; }
+        .badge-danger { background-color: #f87171; color: #ffffff; }
+        .badge-chu-ho-sub { font-size: 10px; color: #2563eb; font-style: italic; }
+        .badge-phone-landlord { font-size: 11px; color: #15803d; font-weight: bold; display: block; margin-top: 2px; }
+        .adult-filter { display:none; align-items:center; gap:6px; font-size:12px; font-weight:600; }
+        .adult-filter select { padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; }
+        .adult-group-row td { font-weight:700; padding:9px 10px; background:#dbeafe; color:#1e3a8a; }
+        .adult-group-row.incomplete td { background:#fff7ed; color:#9a3412; }
+
+
+        /* Nâng cấp thao tác số điện thoại */
+        .phone-action-trigger { border: 0; background: transparent; color: #075985; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; padding: 2px 3px; border-radius: 4px; }
+        .phone-action-trigger:hover, .phone-action-trigger:focus { background: #e0f2fe; outline: 2px solid #7dd3fc; }
+        .phone-modal-backdrop { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(15,23,42,.38); align-items: center; justify-content: center; padding: 16px; }
+        .phone-modal-backdrop.show { display: flex; }
+        .phone-modal { width: min(360px,100%); background: #fff; border-radius: 14px; box-shadow: 0 18px 50px rgba(15,23,42,.25); padding: 18px; border: 1px solid #dbeafe; }
+        .phone-modal h3 { color: #1e3a8a; font-size: 16px; margin-bottom: 6px; }
+        .phone-modal-number { font-size: 18px; font-weight: 700; color: #0f172a; padding: 10px 12px; background: #f1f5f9; border-radius: 8px; margin: 12px 0; text-align: center; overflow-wrap: anywhere; }
+        .phone-modal-actions { display: grid; gap: 8px; }
+        .phone-modal-action { width: 100%; display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; background: #fff; color: #1e293b; padding: 11px 12px; border-radius: 8px; cursor: pointer; text-align: left; font-weight: 600; font-size: 13px; }
+        .phone-modal-action:hover { background: #eff6ff; border-color: #93c5fd; }
+        .phone-modal-action .phone-action-icon { width: 24px; text-align: center; font-size: 17px; }
+        .phone-modal-note { color: #64748b; font-size: 11px; line-height: 1.5; margin-top: 12px; }
+        .phone-modal-close { margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px; background: #e2e8f0; color: #334155; cursor: pointer; font-weight: 600; }
+
+        .log-box {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #1e293b;
+            background: #e0f2fe;
+            padding: 8px 12px;
+            border: 1px solid #7dd3fc;
+            border-radius: 6px;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            height: 320px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📋 Phần mềm Quản lý dữ liệu dân cư</h2>
+</div>
+
+<div class="card">
+    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+        <div>
+            <strong>1. Chọn file Excel danh sách dân cư: </strong>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" />
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-toggle" onclick="toggleCharts()">📊 Ẩn / Hiện Biểu Đồ</button>
+            <button class="btn btn-warning" type="button" onclick="clearSessionData()">🗑️ Xóa dữ liệu / làm mới</button>
+            <button class="btn btn-info" id="exportNormBtn" style="display:none;" onclick="exportNormalizedExcel()">
+                ✅ Xuất File Đã Chuẩn Hóa
+            </button>
+            <button class="btn btn-warning" id="exportUnnormBtn" style="display:none;" onclick="exportUnnormalizedExcel()">
+                ⚠️ Xuất File Chưa Chuẩn Hóa
+            </button>
+            <button class="btn btn-success" id="exportBtn" style="display:none;" onclick="exportAllToExcel()">
+                📥 Xuất Tất Cả Ra Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- BỘ LỌC DỮ LIỆU -->
+    <div class="filter-section">
+        <div class="filter-item">
+            <label>⚙️ Dòng bắt đầu quét:</label>
+            <div>
+                <input type="number" id="startRow" value="3" min="1" max="50" onchange="processData()">
+                (Dòng dữ liệu)
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label>🚻 Giới tính:</label>
+            <select id="filterGender" onchange="processData()">
+                <option value="ALL">-- Tất cả --</option>
+                <option value="NAM">Chỉ Nam</option>
+                <option value="NU">Chỉ Nữ</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>🏠 Tình trạng Cư trú:</label>
+            <select id="filterResidency" onchange="processData()">
+                <option value="ALL">-- Tất cả --</option>
+                <option value="HK">Hộ khẩu / Thường trú</option>
+                <option value="TT">Tạm trú</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>👤 Vai trò trong Hộ:</label>
+            <select id="filterRole" onchange="processData()">
+                <option value="ALL">-- Tất cả --</option>
+                <option value="CHU_HO">Chỉ Chủ hộ</option>
+                <option value="THANH_VIEN">Chỉ Thành viên (Người thân)</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>🌹 Đối tượng / Dân tộc / Nhà trọ:</label>
+            <select id="filterSpecial" onchange="processData()">
+                <option value="ALL">-- Tất cả --</option>
+                <option value="DANG_VIEN">Chỉ Đảng viên</option>
+                <option value="NGUOI_CO_CONG">Chỉ Người có công</option>
+                <option value="KHO_KHAN">Chỉ Hộ khó khăn</option>
+                <option value="TRO">Chỉ Người thuê trọ</option>
+                <option value="CHU_TRO">Chỉ Chủ nhà trọ</option>
+                <option value="DT_THIEU_SO">Dân tộc thiểu số (Khmer, Tày, Hoa...)</option>
+                <option value="KINH">Chỉ Dân tộc Kinh</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>👶 Mẫu giáo (Tuổi):</label>
+            <div>
+                <input type="number" id="mg_min" value="3" onchange="processData()"> -
+                <input type="number" id="mg_max" value="4" onchange="processData()">
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label>🎒 Vào Lớp 1 (Tuổi):</label>
+            <div>
+                <input type="number" id="l1_min" value="5" onchange="processData()"> -
+                <input type="number" id="l1_max" value="6" onchange="processData()">
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label>🏫 Vào Lớp 6 (Tuổi):</label>
+            <div>
+                <input type="number" id="l6_min" value="11" onchange="processData()"> -
+                <input type="number" id="l6_max" value="12" onchange="processData()">
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label>🪖 Nhập ngũ (Nam):</label>
+            <div>
+                <input type="number" id="nn_min" value="18" onchange="processData()"> -
+                <input type="number" id="nn_max" value="27" onchange="processData()">
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label>👵 Cao tuổi (Tuổi):</label>
+            <div>
+                <input type="number" id="ct_min" value="75" onchange="processData()"> trở lên
+            </div>
+        </div>
+    </div>
+
+    <div id="debugLog" class="log-box" style="display:none;"></div>
+</div>
+
+<!-- KHỐI BẢNG THỐNG KÊ CHUẨN HÓA BỔ SUNG -->
+<div class="normalization-summary-card" id="normSummaryCard" style="display:none;">
+    <div>
+        <h4 style="color:#1e3a8a; margin-bottom:5px;">📊 BẢNG TÓM TẮT CHUẨN HÓA THÔNG TIN</h4>
+        <p style="font-size:12px; color:#64748b;">Thống kê tình trạng thu thập mã CCCD/CMND của nhân khẩu</p>
+    </div>
+    <table class="norm-table">
+        <thead>
+            <tr>
+                <th>HẠNG MỤC THỐNG KÊ</th>
+                <th style="text-align:right;">SỐ LƯỢNG / GIÁ TRỊ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Thời gian đối soát</td>
+                <td style="text-align:right; font-weight:bold;" id="norm_time">-</td>
+            </tr>
+            <tr>
+                <td>Tổng số nhân khẩu (đã lọc)</td>
+                <td style="text-align:right; font-weight:bold;" id="norm_total">0</td>
+            </tr>
+            <tr>
+                <td>Số lượng ĐÃ CHUẨN HÓA (Có CCCD)</td>
+                <td style="text-align:right; font-weight:bold; color:#16a34a;" id="norm_chuan_hoa">0</td>
+            </tr>
+            <tr>
+                <td>Số lượng CHƯA CHUẨN HÓA</td>
+                <td style="text-align:right; font-weight:bold; color:#dc2626;" id="norm_chua_chuan_hoa">0</td>
+            </tr>
+            <tr>
+                <td>Tỷ lệ hoàn thành (%)</td>
+                <td style="text-align:right; font-weight:bold; color:#1e40af;" id="norm_rate">0.0%</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- KHU VỰC THỐNG KÊ CARDS -->
+<div class="stats-grid" id="statsGrid" style="display:none;">
+    <div class="stat-card" id="card_ho" style="border-left-color: #6366f1;" onclick="switchTab('ho')">
+        <h3 id="stat_total_households" style="color:#4f46e5;">0</h3>
+        <p style="color:#4338ca;">🏡 Hộ Gia Đình</p>
+    </div>
+
+    <div class="stat-card" id="card_nk" style="border-left-color: #0d9488;" onclick="switchTab('all')">
+        <h3 id="stat_total_people" style="color:#0d9488;">0</h3>
+        <p style="color:#0f766e;">👥 Tổng Nhân Khẩu</p>
+    </div>
+
+    <div class="stat-card" id="card_chuan_hoa" style="border-left-color: #16a34a;" onclick="switchTab('chuan_hoa')">
+        <h3 id="stat_chuan_hoa_card" style="color:#16a34a;">0</h3>
+        <p style="color:#15803d;">✅ Đã Chuẩn Hóa</p>
+    </div>
+
+    <div class="stat-card" id="card_chua_chuan_hoa" style="border-left-color: #dc2626;" onclick="switchTab('chua_chuan_hoa')">
+        <h3 id="stat_chua_chuan_hoa_card" style="color:#dc2626;">0</h3>
+        <p style="color:#b91c1c;">⚠️ Chưa Chuẩn Hóa</p>
+    </div>
+
+    <div class="stat-card" id="card_tro" style="border-left-color: #0284c7;" onclick="switchTab('tro')">
+        <h3 id="stat_nguoi_tro" style="color:#0284c7;">0</h3>
+        <p style="color:#0369a1;">🏠 Người Thuê Trọ</p>
+    </div>
+
+    <div class="stat-card" id="card_dv" style="border-left-color: #dc2626;" onclick="switchTab('dv')">
+        <h3 id="stat_dang_vien" style="color:#dc2626;">0</h3>
+        <p style="color:#991b1b;">🌹 Đảng Viên</p>
+    </div>
+
+    <div class="stat-card" id="card_ncc" style="border-left-color: #d97706;" onclick="switchTab('ncc')">
+        <h3 id="stat_nguoi_co_cong" style="color:#d97706;">0</h3>
+        <p style="color:#92400e;">🎗️ Người Có Công</p>
+    </div>
+
+    <div class="stat-card" id="card_kk" style="border-left-color: #ea580c;" onclick="switchTab('kk')">
+        <h3 id="stat_kho_khan" style="color:#ea580c;">0</h3>
+        <p style="color:#c2410c;">💔 Hộ Khó Khăn</p>
+    </div>
+
+    <div class="stat-card" id="card_dt" style="border-left-color: #9333ea;" onclick="switchTab('dt')">
+        <h3 id="stat_dan_toc" style="color:#9333ea;">0</h3>
+        <p style="color:#6b21a8;">🌾 Dân Tộc TS</p>
+    </div>
+
+    <div class="stat-card" id="card_0" style="border-left-color: #0284c7;" onclick="switchTab(0)">
+        <h3 id="stat_mg">0</h3>
+        <p>👶 Mẫu Giáo</p>
+    </div>
+
+    <div class="stat-card" id="card_1" style="border-left-color: #16a34a;" onclick="switchTab(1)">
+        <h3 id="stat_l1">0</h3>
+        <p>🎒 Vào Lớp 1</p>
+    </div>
+
+    <div class="stat-card" id="card_3" style="border-left-color: #b91c1c;" onclick="switchTab(3)">
+        <h3 id="stat_nn">0</h3>
+        <p>🪖 Nhập Ngũ</p>
+    </div>
+</div>
+
+<div class="card" id="mainDashboard" style="display:none;">
+
+    <div class="tabs">
+        <button class="tab-btn" id="tab_ho" onclick="switchTab('ho')">🏡 Danh Sách Hộ</button>
+        <button class="tab-btn" id="tab_all" onclick="switchTab('all')">👥 Tất Cả Nhân Khẩu</button>
+        <button class="tab-btn" id="tab_adult18" onclick="switchTab('adult18')">🧑 Công Dân Từ Đủ 18 Tuổi</button>
+        <button class="tab-btn" id="tab_chuan_hoa" onclick="switchTab('chuan_hoa')">✅ Đã Chuẩn Hóa</button>
+        <button class="tab-btn" id="tab_chua_chuan_hoa" onclick="switchTab('chua_chuan_hoa')">⚠️ Chưa Chuẩn Hóa</button>
+        <button class="tab-btn" id="tab_tro" onclick="switchTab('tro')">🏠 Thuê Trọ (Ghép Chủ Trọ)</button>
+        <button class="tab-btn" id="tab_dv" onclick="switchTab('dv')">🌹 Đảng Viên</button>
+        <button class="tab-btn" id="tab_ncc" onclick="switchTab('ncc')">🎗️ Người Có Công</button>
+        <button class="tab-btn" id="tab_kk" onclick="switchTab('kk')">💔 Hộ Khó Khăn</button>
+        <button class="tab-btn" id="tab_dt" onclick="switchTab('dt')">🌾 Dân Tộc TS</button>
+        <button class="tab-btn" id="tab_0" onclick="switchTab(0)">👶 Mẫu Giáo</button>
+        <button class="tab-btn" id="tab_1" onclick="switchTab(1)">🎒 Lớp 1</button>
+        <button class="tab-btn" id="tab_2" onclick="switchTab(2)">🏫 Lớp 6</button>
+        <button class="tab-btn" id="tab_3" onclick="switchTab(3)">🪖 Nhập Ngũ</button>
+        <button class="tab-btn" id="tab_4" onclick="switchTab(4)">👵 Cao Tuổi</button>
+    </div>
+
+    <div class="action-bar">
+        <h3 id="currentTabTitle" style="font-size: 14px; color: var(--primary);">
+            Chi tiết danh sách
+        </h3>
+
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label class="adult-filter" id="adult18ApFilterWrap">🏘️ Lọc theo ấp:
+                <select id="adult18ApFilter" onchange="applyAdult18Filters()"><option value="ALL">Tất cả các ấp</option></select>
+            </label>
+            <input
+                type="text"
+                id="searchInput"
+                class="search-box"
+                placeholder="🔍 Tìm không dấu: tên, CCCD, SĐT, mã hộ, địa chỉ..."
+                oninput="filterTableByKeyword()"
+            >
+
+            <button
+                class="btn btn-outline"
+                onclick="exportCurrentTabToExcelProfessional()"
+            >
+                📄 Xuất Bảng Excel
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive" id="tableContainer"></div>
+</div>
+
+<div class="charts-section" id="chartsContainer" style="display:none;">
+    <div class="chart-card">
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <canvas id="pieChart"></canvas>
+    </div>
+</div>
+
+
+<div class="phone-modal-backdrop" id="phoneActionModal" role="dialog" aria-modal="true" aria-labelledby="phoneModalTitle">
+    <div class="phone-modal">
+        <h3 id="phoneModalTitle">📞 Liên hệ số điện thoại</h3>
+        <div class="phone-modal-number" id="phoneModalNumber"></div>
+        <div class="phone-modal-actions">
+            <button type="button" class="phone-modal-action" data-phone-action="copy"><span class="phone-action-icon">📋</span> Sao chép số điện thoại</button>
+            <button type="button" class="phone-modal-action" data-phone-action="call"><span class="phone-action-icon">📱</span> Gọi điện qua SIM</button>
+            <button type="button" class="phone-modal-action" data-phone-action="zalo"><span class="phone-action-icon">💬</span> Mở Zalo để gọi miễn phí</button>
+        </div>
+        <p class="phone-modal-note">Gọi qua SIM sẽ mở ứng dụng điện thoại trên thiết bị hỗ trợ. Với Zalo, phần mềm mở liên hệ theo số điện thoại; bạn chọn nút gọi trong Zalo để bắt đầu cuộc gọi.</p>
+        <button type="button" class="phone-modal-close" id="phoneModalClose">Đóng</button>
+    </div>
+</div>
+
+<div class="card" style="font-size:12px;color:#475569;line-height:1.6;">🔒 <b>Quyền riêng tư:</b> Dữ liệu Excel được xử lý trong trình duyệt trên thiết bị này; ứng dụng không có chức năng gửi tệp dân cư lên máy chủ. Không sử dụng dữ liệu thật trên thiết bị công cộng và hãy đóng trình duyệt sau khi xử lý.
+</div>
+
+<script>
+
+    let globalWorkbookData = null;
+
+    let categorizedData = {
+        mauGiao: [],
+        vaoLop1: [],
+        vaoLop6: [],
+        nhapNgu: [],
+        caoTuoi: [],
+        dangVien: [],
+        nguoiCoCong: [],
+        khoKhan: [],
+        danToc: [],
+        nguoiTro: [],
+        chuanHoa: [],
+        chuaChuanHoa: []
+    };
+
+    let allPopulationData = [];
+    let householdListData = [];
+    let duplicateCccdSet = new Set();
+    let currentTabIndex = 'ho';
+    let currentActiveList = [];
+    let adult18Data = [];
+    let adult18SourceData = [];
+    let adult18ApFilter = 'ALL';
+    let barChartObj = null,
+        pieChartObj = null;
+
+    function normalizeSearchText(value) {
+        return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    function cleanPhoneNumber(value) {
+        const raw = String(value ?? '').trim();
+        if (!raw || /^(chưa có|không có|n\/a)$/i.test(raw)) return '';
+        return raw.replace(/\D/g, '').length >= 7 ? raw : '';
+    }
+
+    function renderPhoneAction(value) {
+        const phone = cleanPhoneNumber(value);
+        if (!phone) return '<span style="color:#94a3b8;">Chưa có</span>';
+        return `<button type="button" class="phone-action-trigger" data-phone="${escapeHtml(phone)}" onclick="openPhoneActionModal(this.getAttribute('data-phone'))" title="Nhấn để sao chép hoặc liên hệ">${escapeHtml(phone)}</button>`;
+    }
+
+    function openPhoneActionModal(phone) {
+        const cleaned = cleanPhoneNumber(phone);
+        if (!cleaned) return;
+        document.getElementById('phoneModalNumber').textContent = cleaned;
+        document.getElementById('phoneActionModal').dataset.phone = cleaned;
+        document.getElementById('phoneActionModal').classList.add('show');
+    }
+
+    function closePhoneActionModal() {
+        document.getElementById('phoneActionModal').classList.remove('show');
+    }
+
+    async function copyPhoneNumber(phone) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(phone);
+            } else {
+                const temp = document.createElement('textarea');
+                temp.value = phone;
+                temp.style.position = 'fixed';
+                temp.style.opacity = '0';
+                document.body.appendChild(temp);
+                temp.select();
+                const copied = document.execCommand('copy');
+                temp.remove();
+                if (!copied) throw new Error('Không thể sao chép');
+            }
+            alert('Đã sao chép số điện thoại: ' + phone);
+        } catch (error) {
+            alert('Không thể sao chép tự động. Vui lòng sao chép số: ' + phone);
+        }
+    }
+
+    document.getElementById('phoneActionModal').addEventListener('click', function(event) {
+        if (event.target === this) closePhoneActionModal();
+        const actionButton = event.target.closest('[data-phone-action]');
+        if (!actionButton) return;
+        const phone = this.dataset.phone || '';
+        const digits = phone.replace(/\D/g, '');
+        const action = actionButton.dataset.phoneAction;
+        if (action === 'copy') {
+            copyPhoneNumber(phone);
+        } else if (action === 'call') {
+            window.location.href = 'tel:' + phone.replace(/[^\d+]/g, '');
+        } else if (action === 'zalo') {
+            if (digits.length < 9) { alert('Số điện thoại chưa đủ độ dài để mở liên hệ Zalo.'); return; }
+            window.open('https://zalo.me/' + digits, '_blank', 'noopener,noreferrer');
+        }
+        closePhoneActionModal();
+    });
+
+    document.getElementById('phoneModalClose').addEventListener('click', closePhoneActionModal);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closePhoneActionModal(); });
+
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const resetPicker = () => { e.target.value = ''; };
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (!['xlsx', 'xls'].includes(ext)) {
+            alert('Vui lòng chọn tệp Excel .xls hoặc .xlsx.'); resetPicker(); return;
+        }
+        if (file.size <= 0 || file.size > 50 * 1024 * 1024) {
+            alert('Tệp rỗng hoặc vượt quá giới hạn 50 MB.'); resetPicker(); return;
+        }
+        if (typeof XLSX === 'undefined' || !XLSX.read) {
+            alert('Không tải được thư viện đọc Excel. Vui lòng kiểm tra kết nối Internet rồi tải lại trang.'); resetPicker(); return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const bytes = new Uint8Array(evt.target.result);
+                const isXlsxZip = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4B &&
+                    [0x03, 0x05, 0x07].includes(bytes[2]) && [0x04, 0x06, 0x08].includes(bytes[3]);
+                const isLegacyXls = bytes.length >= 8 && bytes[0] === 0xD0 && bytes[1] === 0xCF &&
+                    bytes[2] === 0x11 && bytes[3] === 0xE0 && bytes[4] === 0xA1 && bytes[5] === 0xB1 &&
+                    bytes[6] === 0x1A && bytes[7] === 0xE1;
+                if ((ext === 'xlsx' && !isXlsxZip) || (ext === 'xls' && !isLegacyXls)) {
+                    throw new Error('Định dạng nội dung không khớp phần mở rộng tệp.');
+                }
+                const parsed = XLSX.read(bytes, { type: 'array', raw: false, cellDates: false,
+                    cellFormula: false, bookVBA: false, WTF: false });
+                if (!parsed || !parsed.SheetNames || !parsed.SheetNames.length || !parsed.Sheets[parsed.SheetNames[0]] || !parsed.Sheets[parsed.SheetNames[0]]['!ref']) {
+                    throw new Error('Không tìm thấy bảng dữ liệu hợp lệ trong tệp Excel.');
+                }
+                globalWorkbookData = parsed;
+                processData();
+            } catch (error) {
+                globalWorkbookData = null;
+                console.error('Lỗi đọc Excel:', error);
+                alert('Không thể đọc tệp Excel. Vui lòng kiểm tra tệp, định dạng và cấu trúc dữ liệu.\nChi tiết: ' + (error && error.message ? error.message : 'Lỗi không xác định'));
+                resetPicker();
+            }
+        };
+        reader.onerror = function() { alert('Không thể đọc tệp từ thiết bị.'); resetPicker(); };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function clearSessionData() {
+        if (confirm('Xóa dữ liệu đang xử lý khỏi phiên trình duyệt và tải lại trang? Hãy chắc chắn đã xuất dữ liệu cần giữ.')) location.reload();
+    }
+
+    function toggleCharts() {
+        const container = document.getElementById('chartsContainer');
+        container.style.display =
+            (container.style.display === 'none' || container.style.display === '')
+                ? 'grid'
+                : 'none';
+    }
+
+
+    function calculateExactAge(dateDisplay) {
+        const value = String(dateDisplay || '').trim();
+        const match = value.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+        if (match) {
+            const day = Number(match[1]), month = Number(match[2]), year = Number(match[3]);
+            const birth = new Date(year, month - 1, day);
+            if (birth.getFullYear() !== year || birth.getMonth() !== month - 1 || birth.getDate() !== day) return null;
+            const today = new Date();
+            let age = today.getFullYear() - year;
+            if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) age--;
+            return age;
+        }
+        // Chỉ có năm sinh: chỉ xác nhận chắc chắn đủ 18 khi đã qua trọn 18 năm.
+        if (/^\d{4}$/.test(value)) {
+            const difference = new Date().getFullYear() - Number(value);
+            return difference >= 19 ? difference : null;
+        }
+        return null;
+    }
+
+    function extractApFromAddress(address) {
+        const text = String(address || '').trim();
+        if (!text) return 'Chưa xác định';
+        const match = text.match(/(?:^|[,;\s])(?:ấp|ap)\s*([0-9a-zA-ZÀ-ỹ._-]+)/i);
+        return match ? ('Ấp ' + match[1].replace(/[.,;]+$/, '')) : 'Chưa xác định';
+    }
+
+    function isResidencyMarked(value, keyword) {
+        const v = String(value || '').trim().toLowerCase();
+        return v === 'x' || v === '✓' || v === '✔' || v.includes(keyword);
+    }
+
+    function buildAdult18Data() {
+        adult18Data = adult18SourceData
+            .map(item => {
+                const age = calculateExactAge(item.NgaySinh);
+                const address = String(item.DiaChi || '').trim();
+                const hasResidency = item.CuTru === 'Hộ khẩu' || item.CuTru === 'Tạm trú' || item.CuTru === 'Cả hai';
+                const complete = Boolean(address && hasResidency);
+                return {
+                    ...item,
+                    TuoiChinhXac: age,
+                    Ap: extractApFromAddress(address),
+                    DiaChiThuongTru: item.CuTru === 'Hộ khẩu' || item.CuTru === 'Cả hai' ? address : '',
+                    DiaChiTamTru: item.CuTru === 'Tạm trú' || item.CuTru === 'Cả hai' ? address : '',
+                    NhomThongTin: complete ? 'Đầy đủ thông tin' : 'Chưa đầy đủ thông tin',
+                    ThieuThongTin: [!address ? 'Thiếu địa chỉ' : '', !hasResidency ? 'Chưa xác định thường trú/tạm trú' : ''].filter(Boolean).join('; ')
+                };
+            })
+            .filter(item => item.TuoiChinhXac !== null && item.TuoiChinhXac >= 18)
+            .sort((a, b) => {
+                const group = (a.NhomThongTin === 'Đầy đủ thông tin' ? 0 : 1) - (b.NhomThongTin === 'Đầy đủ thông tin' ? 0 : 1);
+                return group || a.Ap.localeCompare(b.Ap, 'vi') || a.HoTen.localeCompare(b.HoTen, 'vi');
+            });
+    }
+
+    function getFilteredAdult18Data() {
+        return adult18Data.filter(item => adult18ApFilter === 'ALL' || item.Ap === adult18ApFilter);
+    }
+
+    function populateAdult18ApFilter() {
+        const select = document.getElementById('adult18ApFilter');
+        if (!select) return;
+        const previous = adult18ApFilter;
+        const aps = [...new Set(adult18Data.map(item => item.Ap))].sort((a, b) => a.localeCompare(b, 'vi'));
+        select.innerHTML = '<option value="ALL">Tất cả các ấp</option>' + aps.map(ap => `<option value="${escapeHtml(ap)}">${escapeHtml(ap)}</option>`).join('');
+        adult18ApFilter = aps.includes(previous) ? previous : 'ALL';
+        select.value = adult18ApFilter;
+    }
+
+    function applyAdult18Filters() {
+        adult18ApFilter = document.getElementById('adult18ApFilter').value;
+        currentActiveList = getFilteredAdult18Data();
+        renderTable(currentActiveList);
+    }
+
+    function parseExcelDate(rawVal) {
+        if (!rawVal) {
+            return { display: '', year: null };
+        }
+
+        let str = String(rawVal).trim();
+        if (!str) {
+            return { display: '', year: null };
+        }
+
+        if (/^\d{4}$/.test(str)) {
+            return { display: str, year: parseInt(str) };
+        }
+
+        let parts = str.split(/[\/\.-]/);
+        if (parts.length === 3) {
+            let d = parts[0].padStart(2, '0');
+            let m = parts[1].padStart(2, '0');
+            let y = parseInt(parts[2]);
+
+            if (y >= 1900 && y <= 2030) {
+                return { display: `${d}/${m}/${y}`, year: y };
+            }
+        }
+
+        let num = Number(str);
+        if (!isNaN(num) && num > 1000) {
+            if (num >= 1900 && num <= 2030) {
+                return { display: String(num), year: num };
+            }
+
+            try {
+                let dateObj = XLSX.SSF.parse_date_code(num);
+                if (dateObj && dateObj.y) {
+                    return {
+                        display: `${String(dateObj.d).padStart(2, '0')}/${String(dateObj.m).padStart(2, '0')}/${dateObj.y}`,
+                        year: dateObj.y
+                    };
+                }
+            } catch (e) {}
+        }
+
+        return { display: str, year: null };
+    }
+
+
+    const EXCEL_COL = {
+        STT: 0,
+        HOTEN: 1,
+        NGAYSINH_NAM: 2,
+        NGAYSINH_NU: 3,
+        DIACHI: 4,
+        SDT: 5,
+        CCCD: 6,
+        HO_KHAU: 7,
+        TAM_TRU: 8,
+        DANG_VIEN_CHI_BO: 9,
+        DANG_VIEN_123: 10,
+        DAN_TOC: 11,
+        CHU_HO_DAI_DIEN: 12,
+        CHU_HO: 13,
+        DANH_SACH_TRO: 14,
+        NGUOI_CO_CONG: 15,
+        DAN_TOC_KHMER: 16,
+        DAN_TOC_TAY: 17,
+        DAN_TOC_HOA: 18,
+        DAN_TOC_KHAC: 19,
+        HO_KHO_KHAN: 20,
+        GIA_DINH_VAN_HOA: 21
+    };
+
+
+    function isMarked(value) {
+        const v = String(value || '').trim().toLowerCase();
+        return v === 'x' || v === '✓' || v === '✔';
+    }
+
+
+    function getMergedCellValue(sheet, rowIndex, colIndex) {
+        const cellRef = XLSX.utils.encode_cell({ c: colIndex, r: rowIndex });
+        const cell = sheet[cellRef];
+
+        if (cell && cell.v !== undefined && cell.v !== null) {
+            return String(cell.v).trim();
+        }
+
+        const merges = sheet['!merges'] || [];
+        for (const merge of merges) {
+            if (
+                rowIndex >= merge.s.r &&
+                rowIndex <= merge.e.r &&
+                colIndex >= merge.s.c &&
+                colIndex <= merge.e.c
+            ) {
+                const firstCellRef = XLSX.utils.encode_cell({ c: merge.s.c, r: merge.s.r });
+                const firstCell = sheet[firstCellRef];
+
+                if (firstCell && firstCell.v !== undefined && firstCell.v !== null) {
+                    return String(firstCell.v).trim();
+                }
+                return '';
+            }
+        }
+        return '';
+    }
+
+
+    function hasDangVienValue(value) {
+        if (value === null || value === undefined) {
+            return false;
+        }
+        return String(value).trim() !== '';
+    }
+
+
+    function getDangVienInfo(sheet, rowIndex) {
+        const chiBo = getMergedCellValue(sheet, rowIndex, EXCEL_COL.DANG_VIEN_CHI_BO);
+        const cot123 = getMergedCellValue(sheet, rowIndex, EXCEL_COL.DANG_VIEN_123);
+        const values = [];
+
+        if (hasDangVienValue(chiBo)) values.push(chiBo);
+        if (hasDangVienValue(cot123)) values.push(cot123);
+
+        return {
+            chiBo: chiBo,
+            cot123: cot123,
+            text: values.join(' | '),
+            isDangVien: values.length > 0
+        };
+    }
+
+
+    // ============================================================
+    // XỬ LÝ DỮ LIỆU CÍNH
+    // ============================================================
+
+    function processData() {
+        if (!globalWorkbookData) return;
+        if (typeof XLSX === 'undefined' || !XLSX.utils) { alert('Thiếu thư viện xử lý Excel.'); return; }
+
+        const startRowInput = parseInt(document.getElementById('startRow').value) || 3;
+        const genderFilter = document.getElementById('filterGender').value;
+        const residencyFilter = document.getElementById('filterResidency').value;
+        const roleFilter = document.getElementById('filterRole').value;
+        const specialFilter = document.getElementById('filterSpecial').value;
+
+        const cfg = {
+            mgMin: parseInt(document.getElementById('mg_min').value) || 0,
+            mgMax: parseInt(document.getElementById('mg_max').value) || 0,
+            l1Min: parseInt(document.getElementById('l1_min').value) || 0,
+            l1Max: parseInt(document.getElementById('l1_max').value) || 0,
+            l6Min: parseInt(document.getElementById('l6_min').value) || 0,
+            l6Max: parseInt(document.getElementById('l6_max').value) || 0,
+            nnMin: parseInt(document.getElementById('nn_min').value) || 0,
+            nnMax: parseInt(document.getElementById('nn_max').value) || 0,
+            ctMin: parseInt(document.getElementById('ct_min').value) || 0
+        };
+
+        const sheet = globalWorkbookData.Sheets[globalWorkbookData.SheetNames[0]];
+        const range = XLSX.utils.decode_range(sheet['!ref']);
+        const currentYear = new Date().getFullYear();
+
+        categorizedData = {
+            mauGiao: [],
+            vaoLop1: [],
+            vaoLop6: [],
+            nhapNgu: [],
+            caoTuoi: [],
+            dangVien: [],
+            nguoiCoCong: [],
+            khoKhan: [],
+            danToc: [],
+            nguoiTro: [],
+            chuanHoa: [],
+            chuaChuanHoa: []
+        };
+
+        allPopulationData = [];
+        adult18SourceData = [];
+        householdListData = [];
+        duplicateCccdSet = new Set();
+
+        let cccdCountMap = {};
+        let totalHouseholdsSet = new Set();
+        let totalPeopleCount = 0;
+
+        let genderStats = {
+            nam: 0,
+            nu: 0
+        };
+
+        const householdInfoMap = {};
+        const landlordMapByHoId = {};
+        let currentHouseholdId = "";
+
+
+        // ========================================================
+        // BƯỚC 1: Quét Chủ Hộ & Chủ Trọ
+        // ========================================================
+        for (let R = startRowInput - 1; R <= range.e.r; ++R) {
+            function getCellVal(C) {
+                let cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+                let cell = sheet[cellRef];
+                return cell ? String(cell.v).trim() : '';
+            }
+
+            let stt = getCellVal(0);
+            if (stt !== '' && !isNaN(parseInt(stt))) {
+                currentHouseholdId = stt;
+            }
+
+            let name = getCellVal(1);
+            let address = getCellVal(4);
+            let phone = getCellVal(5);
+            let isOwnerMarked = isMarked(getCellVal(12)) || isMarked(getCellVal(13));
+            let chuTroVal = '';
+
+            if (currentHouseholdId) {
+                if (!householdInfoMap[currentHouseholdId]) {
+                    householdInfoMap[currentHouseholdId] = {
+                        TenChuHo: '',
+                        SDT: '',
+                        DiaChi: '',
+                        SoThanhVien: 0,
+                        OwnerCount: 0,
+                        HasOwner: false
+                    };
+                }
+
+                if (isOwnerMarked && name) {
+                    householdInfoMap[currentHouseholdId].OwnerCount++;
+                    if (householdInfoMap[currentHouseholdId].OwnerCount === 1) {
+                        householdInfoMap[currentHouseholdId].TenChuHo = name;
+                        householdInfoMap[currentHouseholdId].SDT = phone || '';
+                        householdInfoMap[currentHouseholdId].HasOwner = true;
+                    } else {
+                        householdInfoMap[currentHouseholdId].TenChuHo = '';
+                        householdInfoMap[currentHouseholdId].SDT = '';
+                        householdInfoMap[currentHouseholdId].HasOwner = false;
+                    }
+                }
+
+                if (address && !householdInfoMap[currentHouseholdId].DiaChi) {
+                    householdInfoMap[currentHouseholdId].DiaChi = address;
+                }
+
+                if (chuTroVal !== '' && name) {
+                    let landlordPhone = phone || householdInfoMap[currentHouseholdId].SDT || '';
+                    let hoMatch = chuTroVal.match(/\d+/);
+
+                    if (hoMatch) {
+                        let targetHoId = hoMatch[0];
+                        landlordMapByHoId[targetHoId] = {
+                            TenChuTro: name,
+                            MaHoChuTro: currentHouseholdId,
+                            SDTChuTro: landlordPhone
+                        };
+                    } else {
+                        landlordMapByHoId[currentHouseholdId] = {
+                            TenChuTro: name,
+                            MaHoChuTro: currentHouseholdId,
+                            SDTChuTro: landlordPhone
+                        };
+                    }
+                }
+            }
+        }
+
+
+        // ========================================================
+        // BƯỚC 2: Kiểm tra Trùng CCCD
+        // ========================================================
+        for (let R = startRowInput - 1; R <= range.e.r; ++R) {
+            let cellRef = XLSX.utils.encode_cell({ c: 6, r: R });
+            let cell = sheet[cellRef];
+            let cccd = cell ? String(cell.v).trim() : '';
+
+            if (cccd && cccd !== '' && cccd.toLowerCase() !== 'số cccd/ cmnd' && cccd.length >= 8) {
+                cccdCountMap[cccd] = (cccdCountMap[cccd] || 0) + 1;
+            }
+        }
+
+        for (let cccd in cccdCountMap) {
+            if (cccdCountMap[cccd] > 1) {
+                duplicateCccdSet.add(cccd);
+            }
+        }
+
+
+        // ========================================================
+        // BƯỚC 3: Đọc chi tiết dữ liệu
+        // ========================================================
+        currentHouseholdId = "";
+
+        for (let R = startRowInput - 1; R <= range.e.r; ++R) {
+            function getVal(C) {
+                let cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+                let cell = sheet[cellRef];
+                return cell ? String(cell.v).trim() : '';
+            }
+
+            const rawSTT = getVal(0);
+            if (rawSTT !== '' && !isNaN(parseInt(rawSTT))) {
+                currentHouseholdId = rawSTT;
+            }
+
+            const name = getVal(1);
+            const dobNamStr = getVal(2);
+            const dobNuStr = getVal(3);
+            const rawDobStr = dobNamStr !== '' ? dobNamStr : dobNuStr;
+
+            if (name && name.toLowerCase() !== 'họ và tên') {
+                let parsedDate = parseExcelDate(rawDobStr);
+                let birthYear = parsedDate.year;
+
+                totalPeopleCount++;
+
+                if (currentHouseholdId) {
+                    totalHouseholdsSet.add(currentHouseholdId);
+                }
+
+                let personalPhone = getVal(5);
+                let cccdVal = getVal(6);
+                let addressVal = getVal(4) || (householdInfoMap[currentHouseholdId] ? householdInfoMap[currentHouseholdId].DiaChi : '');
+                let isOwnerMarked = isMarked(getVal(12)) || isMarked(getVal(13));
+                let ownerInfo = householdInfoMap[currentHouseholdId];
+                let currentOwnerName = (ownerInfo && ownerInfo.HasOwner) ? ownerInfo.TenChuHo : '';
+                let isOwner = isOwnerMarked;
+
+                if (currentHouseholdId && householdInfoMap[currentHouseholdId]) {
+                    householdInfoMap[currentHouseholdId].SoThanhVien++;
+                }
+
+                let gender = '';
+                if (dobNuStr !== '') {
+                    gender = 'NU';
+                    genderStats.nu++;
+                } else if (dobNamStr !== '') {
+                    gender = 'NAM';
+                    genderStats.nam++;
+                }
+
+                let hkVal = getVal(7).toLowerCase();
+                let ttVal = getVal(8).toLowerCase();
+                let residencyCode = 'NONE';
+                let residencyDisplay = '';
+
+                const hasHK = isResidencyMarked(hkVal, 'hộ khẩu') || isResidencyMarked(hkVal, 'thường trú');
+                const hasTT = isResidencyMarked(ttVal, 'tạm trú');
+                if (hasHK && hasTT) {
+                    residencyCode = 'BOTH';
+                    residencyDisplay = 'Cả hai';
+                } else if (hasHK) {
+                    residencyCode = 'HK';
+                    residencyDisplay = 'Hộ khẩu';
+                } else if (hasTT) {
+                    residencyCode = 'TT';
+                    residencyDisplay = 'Tạm trú';
+                }
+
+                const dangVienInfo = getDangVienInfo(sheet, R);
+                let dangVienText = dangVienInfo.text;
+                let isDangVien = dangVienInfo.isDangVien;
+
+                let chuTroText = '';
+                let isChuTro = false;
+                let isDsTro = isMarked(getVal(14));
+                let isNguoiCoCong = isMarked(getVal(15));
+                let danTocStr = getVal(11) || 'Kinh';
+
+                if (isMarked(getVal(16))) {
+                    danTocStr = 'Khmer';
+                } else if (isMarked(getVal(17))) {
+                    danTocStr = 'Tày';
+                } else if (isMarked(getVal(18))) {
+                    danTocStr = 'Hoa';
+                } else if (getVal(19) !== '') {
+                    let dtVal = getVal(19);
+                    danTocStr = isMarked(dtVal) ? 'Dân tộc khác' : dtVal;
+                }
+
+                let isKhoKhan = isMarked(getVal(20));
+                let ghiChu = isMarked(getVal(21)) ? 'Gia đình văn hóa' : '';
+
+                let chuTroNameOnly = 'Chưa xác định';
+                let chuTroMaHo = '';
+                let chuTroPhone = '';
+
+                if (isDsTro) {
+                    let landlord = landlordMapByHoId[currentHouseholdId];
+                    if (landlord) {
+                        chuTroNameOnly = landlord.TenChuTro;
+                        chuTroMaHo = landlord.MaHoChuTro;
+                        chuTroPhone = landlord.SDTChuTro || (householdInfoMap[landlord.MaHoChuTro] ? householdInfoMap[landlord.MaHoChuTro].SDT : '');
+                    }
+                }
+
+                let phanLoaiArr = [];
+                if (isDangVien) phanLoaiArr.push('Đảng viên');
+                if (isNguoiCoCong) phanLoaiArr.push('Người có công');
+                if (isKhoKhan) phanLoaiArr.push('Hộ khó khăn');
+                if (isChuTro) phanLoaiArr.push(`Chủ trọ (${chuTroText})`);
+                if (danTocStr !== 'Kinh') phanLoaiArr.push(danTocStr);
+                if (ghiChu) phanLoaiArr.push(ghiChu);
+
+                let phanLoaiDisplay = phanLoaiArr.join(', ');
+
+                let finalPhone = personalPhone;
+                let isPhoneFromOwner = false;
+
+                if (!finalPhone && householdInfoMap[currentHouseholdId] && householdInfoMap[currentHouseholdId].HasOwner && householdInfoMap[currentHouseholdId].SDT) {
+                    finalPhone = householdInfoMap[currentHouseholdId].SDT;
+                    isPhoneFromOwner = true;
+                }
+
+                const age = birthYear ? currentYear - birthYear : '';
+
+                // KIỂM TRẢ TÌNH TRẠNG CHUẨN HÓA (có mã CCCD hợp lệ)
+                const isNormalized = Boolean(cccdVal && cccdVal.trim() !== '' && cccdVal.toLowerCase() !== 'số cccd/ cmnd');
+
+                const item = {
+                    MaHo: currentHouseholdId || '',
+                    HoTen: name,
+                    TenChuHoInfo: currentOwnerName,
+                    TenChuTroInfo: chuTroNameOnly,
+                    MaHoChuTro: chuTroMaHo,
+                    SDTChuTro: chuTroPhone,
+                    GioiTinh: gender === 'NAM' ? 'Nam' : 'Nữ',
+                    NgaySinh: parsedDate.display,
+                    Tuoi: age,
+                    CuTru: residencyDisplay,
+                    DiaChi: addressVal,
+                    SDTDisplay: finalPhone,
+                    IsPhoneOwner: isPhoneFromOwner,
+                    CCCD: cccdVal,
+                    IsDuplicateCCCD: duplicateCccdSet.has(cccdVal),
+                    IsOwner: isOwner,
+                    IsDangVien: isDangVien,
+                    DangVienChiBo: dangVienInfo.chiBo,
+                    DangVien123: dangVienInfo.cot123,
+                    DangVienText: dangVienText,
+                    IsNguoiCoCong: isNguoiCoCong,
+                    IsKhoKhan: isKhoKhan,
+                    IsChuTro: isChuTro,
+                    IsDsTro: isDsTro,
+                    DanToc: danTocStr,
+                    GhiChu: ghiChu,
+                    PhanLoaiGhiChu: phanLoaiDisplay,
+                    IsNormalized: isNormalized
+                };
+
+                // Danh sách công dân từ đủ 18 tuổi được lấy độc lập với các bộ lọc của những tab cũ.
+                adult18SourceData.push(item);
+
+                // BỘ LỌC CŨ: giữ nguyên tác dụng đối với các tab hiện hữu.
+                if (genderFilter !== 'ALL' && gender !== genderFilter) continue;
+                if (residencyFilter !== 'ALL' && residencyCode !== residencyFilter) continue;
+                if (roleFilter === 'CHU_HO' && !isOwner) continue;
+                if (roleFilter === 'THANH_VIEN' && isOwner) continue;
+                if (specialFilter === 'DANG_VIEN' && !isDangVien) continue;
+                if (specialFilter === 'NGUOI_CO_CONG' && !isNguoiCoCong) continue;
+                if (specialFilter === 'KHO_KHAN' && !isKhoKhan) continue;
+                if (specialFilter === 'TRO' && !isDsTro) continue;
+                if (specialFilter === 'CHU_TRO' && !isChuTro) continue;
+                if (specialFilter === 'DT_THIEU_SO' && danTocStr === 'Kinh') continue;
+                if (specialFilter === 'KINH' && danTocStr !== 'Kinh') continue;
+
+                allPopulationData.push(item);
+
+                if (isNormalized) {
+                    categorizedData.chuanHoa.push(item);
+                } else {
+                    categorizedData.chuaChuanHoa.push(item);
+                }
+
+                if (birthYear && age >= cfg.mgMin && age <= cfg.mgMax) categorizedData.mauGiao.push(item);
+                if (birthYear && age >= cfg.l1Min && age <= cfg.l1Max) categorizedData.vaoLop1.push(item);
+                if (birthYear && age >= cfg.l6Min && age <= cfg.l6Max) categorizedData.vaoLop6.push(item);
+                if (birthYear && gender === 'NAM' && age >= cfg.nnMin && age <= cfg.nnMax) categorizedData.nhapNgu.push(item);
+                if (birthYear && age >= cfg.ctMin) categorizedData.caoTuoi.push(item);
+
+                if (isDangVien) categorizedData.dangVien.push(item);
+                if (isNguoiCoCong) categorizedData.nguoiCoCong.push(item);
+                if (isKhoKhan) categorizedData.khoKhan.push(item);
+                if (danTocStr !== 'Kinh') categorizedData.danToc.push(item);
+                if (isDsTro) categorizedData.nguoiTro.push(item);
+            }
+        }
+
+
+        // ============================================================
+        // DANH SÁCH HỘ
+        // ============================================================
+        householdListData = Array.from(totalHouseholdsSet).map(maHo => {
+            let info = householdInfoMap[maHo] || {};
+            return {
+                MaHo: maHo,
+                TenChuHo: info.HasOwner ? info.TenChuHo : 'Chưa có thông tin chủ hộ',
+                SDT: info.HasOwner && info.SDT ? info.SDT : 'Chưa có',
+                DiaChi: info.DiaChi || 'Chưa có',
+                SoThanhVien: info.SoThanhVien || 0
+            };
+        });
+
+
+        buildAdult18Data();
+        populateAdult18ApFilter();
+
+        // ============================================================
+        // THỐNG KÊ & HIỂN THỊ DỮ LIỆU CHUẨN HÓA
+        // ============================================================
+        const countChuanHoa = categorizedData.chuanHoa.length;
+        const countChuaChuanHoa = categorizedData.chuaChuanHoa.length;
+        const totalNorm = allPopulationData.length;
+        const normRate = totalNorm > 0 ? ((countChuanHoa / totalNorm) * 100).toFixed(1) : "0.0";
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+
+        document.getElementById('norm_time').innerText = timeStr;
+        document.getElementById('norm_total').innerText = totalNorm;
+        document.getElementById('norm_chuan_hoa').innerText = countChuanHoa;
+        document.getElementById('norm_chua_chuan_hoa').innerText = countChuaChuanHoa;
+        document.getElementById('norm_rate').innerText = `${normRate}%`;
+
+        document.getElementById('stat_total_households').innerText = totalHouseholdsSet.size;
+        document.getElementById('stat_total_people').innerText = totalPeopleCount;
+        document.getElementById('stat_chuan_hoa_card').innerText = countChuanHoa;
+        document.getElementById('stat_chua_chuan_hoa_card').innerText = countChuaChuanHoa;
+        document.getElementById('stat_nguoi_tro').innerText = categorizedData.nguoiTro.length;
+        document.getElementById('stat_dang_vien').innerText = categorizedData.dangVien.length;
+        document.getElementById('stat_nguoi_co_cong').innerText = categorizedData.nguoiCoCong.length;
+        document.getElementById('stat_kho_khan').innerText = categorizedData.khoKhan.length;
+        document.getElementById('stat_dan_toc').innerText = categorizedData.danToc.length;
+        document.getElementById('stat_mg').innerText = categorizedData.mauGiao.length;
+        document.getElementById('stat_l1').innerText = categorizedData.vaoLop1.length;
+        document.getElementById('stat_nn').innerText = categorizedData.nhapNgu.length;
+
+        document.getElementById('debugLog').style.display = 'block';
+
+        let warnCccdText = duplicateCccdSet.size > 0
+            ? ` | <b style="color:#dc2626;">⚠️ Phát hiện ${duplicateCccdSet.size} mã CCCD bị trùng lặp!</b>`
+            : ` | <b style="color:#16a34a;">✅ Không tìm thấy CCCD trùng lặp.</b>`;
+
+        document.getElementById('debugLog').innerHTML =
+            `📊 Đã quét: <b>${totalHouseholdsSet.size} Hộ</b> | <b>${totalPeopleCount} Nhân khẩu</b> ${warnCccdText}`;
+
+        document.getElementById('normSummaryCard').style.display = 'flex';
+        document.getElementById('statsGrid').style.display = 'grid';
+        document.getElementById('mainDashboard').style.display = 'block';
+        document.getElementById('chartsContainer').style.display = 'grid';
+        document.getElementById('exportBtn').style.display = 'inline-block';
+        document.getElementById('exportNormBtn').style.display = 'inline-block';
+        document.getElementById('exportUnnormBtn').style.display = 'inline-block';
+
+        renderCharts(genderStats);
+        switchTab(currentTabIndex);
+    }
+
+
+    // ============================================================
+    // CHUYỂN TAB
+    // ============================================================
+
+    function switchTab(tabIndex) {
+        currentTabIndex = tabIndex;
+
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
+
+        const titleObj = {
+            'ho': 'Danh sách Các Hộ Gia Đình',
+            'all': 'Danh sách Tất Cả Nhân Khẩu',
+            'adult18': 'Danh sách Công Dân Từ Đủ 18 Tuổi Trở Lên',
+            'chuan_hoa': 'Danh sách Nhân Khẩu ĐÃ CHUẨN HÓA (Có CCCD)',
+            'chua_chuan_hoa': 'Danh sách Nhân Khẩu CHƯA CHUẨN HÓA (Thiếu CCCD)',
+            'tro': 'Danh sách Người Thuê Trọ (Ghép Theo Chủ Trọ)',
+            'dv': 'Danh sách Đảng Viên',
+            'ncc': 'Danh sách Người Có Công',
+            'kk': 'Danh sách Hộ Khó Khăn',
+            'dt': 'Danh sách Dân Tộc Thiểu Số',
+            0: 'Danh sách Mẫu Giáo',
+            1: 'Danh sách Vào Lớp 1',
+            2: 'Danh sách Vào Lớp 6',
+            3: 'Danh sách Nhập Ngũ (Nam)',
+            4: 'Danh sách Cao Tuổi'
+        };
+
+        const tabBtnElem = document.getElementById(`tab_${tabIndex}`);
+        if (tabBtnElem) tabBtnElem.classList.add('active');
+
+        const cardElem = document.getElementById(`card_${tabIndex}`);
+        if (cardElem) cardElem.classList.add('active-card');
+
+        document.getElementById('currentTabTitle').innerText = titleObj[tabIndex] || 'Chi tiết danh sách';
+        document.getElementById('searchInput').value = '';
+        document.getElementById('adult18ApFilterWrap').style.display = tabIndex === 'adult18' ? 'inline-flex' : 'none';
+
+        if (tabIndex === 'ho') {
+            currentActiveList = householdListData;
+        } else if (tabIndex === 'all') {
+            currentActiveList = allPopulationData;
+        } else if (tabIndex === 'adult18') {
+            currentActiveList = getFilteredAdult18Data();
+        } else if (tabIndex === 'chuan_hoa') {
+            currentActiveList = categorizedData.chuanHoa;
+        } else if (tabIndex === 'chua_chuan_hoa') {
+            currentActiveList = categorizedData.chuaChuanHoa;
+        } else if (tabIndex === 'tro') {
+            currentActiveList = categorizedData.nguoiTro;
+        } else if (tabIndex === 'dv') {
+            currentActiveList = categorizedData.dangVien;
+        } else if (tabIndex === 'ncc') {
+            currentActiveList = categorizedData.nguoiCoCong;
+        } else if (tabIndex === 'kk') {
+            currentActiveList = categorizedData.khoKhan;
+        } else if (tabIndex === 'dt') {
+            currentActiveList = categorizedData.danToc;
+        } else {
+            const mapArr = [
+                categorizedData.mauGiao,
+                categorizedData.vaoLop1,
+                categorizedData.vaoLop6,
+                categorizedData.nhapNgu,
+                categorizedData.caoTuoi
+            ];
+            currentActiveList = mapArr[tabIndex] || [];
+        }
+
+        renderTable(currentActiveList);
+    }
+
+
+    // ============================================================
+    // HIỂN THỊ BẢNG
+    // ============================================================
+
+    function renderTable(dataList) {
+        const container = document.getElementById('tableContainer');
+
+        if (!dataList || dataList.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:#64748b;">Không tìm thấy dữ liệu phù hợp.</p>';
+            return;
+        }
+
+        if (currentTabIndex === 'adult18') {
+            renderAdult18Table(dataList, container);
+            return;
+        }
+
+        let html = '<table><thead><tr>';
+
+        if (currentTabIndex === 'ho') {
+            html +=
+                '<th style="width:50px;">STT</th>' +
+                '<th style="width:80px;">Mã Hộ</th>' +
+                '<th>Họ và Tên Chủ Hộ</th>' +
+                '<th>Số Điện Thoại</th>' +
+                '<th>Địa Chỉ</th>' +
+                '<th style="width:100px;">Số Nhân Khẩu</th>' +
+                '</tr></thead><tbody>';
+
+            dataList.forEach((item, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><b>${escapeHtml(item.MaHo)}</b></td>
+                        <td>
+                            ${item.TenChuHo === 'Chưa có thông tin chủ hộ'
+                                ? '<i style="color:#94a3b8;">Chưa có thông tin chủ hộ</i>'
+                                : '<span class="badge badge-chu-ho-main">Chủ hộ</span> <b>' + escapeHtml(item.TenChuHo) + '</b>'}
+                        </td>
+                        <td>${renderPhoneAction(item.SDT)}</td>
+                        <td>${escapeHtml(item.DiaChi)}</td>
+                        <td><span class="badge badge-age">${escapeHtml(item.SoThanhVien)} người</span></td>
+                    </tr>
+                `;
+            });
+
+        } else if (currentTabIndex === 'tro') {
+            html +=
+                '<th style="width:40px;">STT</th>' +
+                '<th style="width:60px;">Mã Hộ</th>' +
+                '<th>Họ và Tên Người Trọ</th>' +
+                '<th>Vai Trò</th>' +
+                '<th style="width:80px;">Ngày Sinh</th>' +
+                '<th style="width:40px;">Tuổi</th>' +
+                '<th style="width:50px;">Giới Tính</th>' +
+                '<th style="width:70px;">Cư Trú</th>' +
+                '<th style="width:100px;">Số CCCD/CMND</th>' +
+                '<th>SĐT Người Trọ</th>' +
+                '<th>Chủ Nhà Trọ (Số Phòng/Hộ)</th>' +
+                '<th>Địa Chỉ Thuê Trọ</th>' +
+                '</tr></thead><tbody>';
+
+            let groupedByLandlord = {};
+            dataList.forEach(item => {
+                let key = item.TenChuTroInfo + '_' + item.MaHoChuTro;
+                if (!groupedByLandlord[key]) groupedByLandlord[key] = [];
+                groupedByLandlord[key].push(item);
+            });
+
+            let globalIndex = 1;
+            for (let key in groupedByLandlord) {
+                let items = groupedByLandlord[key];
+                let rowSpan = items.length;
+
+                items.forEach((item, idx) => {
+                    let dupClass = item.IsDuplicateCCCD ? 'class="duplicate-cccd"' : '';
+                    let cccdBadge = item.IsDuplicateCCCD ? '<span class="badge badge-danger">Trùng</span>' : '';
+
+                    html += `
+                        <tr ${dupClass}>
+                            <td>${globalIndex++}</td>
+                            <td><b>${escapeHtml(item.MaHo)}</b></td>
+                            <td><b>${escapeHtml(item.HoTen)}</b></td>
+                            <td><span class="badge badge-thanh-vien">Người thuê trọ</span></td>
+                            <td>${escapeHtml(item.NgaySinh)}</td>
+                            <td><span class="badge badge-age">${escapeHtml(item.Tuoi)}</span></td>
+                            <td>
+                                ${item.GioiTinh
+                                    ? `<span class="badge ${item.GioiTinh === 'Nam' ? 'badge-nam' : 'badge-nu'}">${escapeHtml(item.GioiTinh)}</span>`
+                                    : '<span style="color:#94a3b8;">Chưa xác định</span>'}
+                            </td>
+                            <td><span class="badge badge-tt">${escapeHtml(item.CuTru)}</span></td>
+                            <td>${escapeHtml(item.CCCD)} ${cccdBadge}</td>
+                            <td>${renderPhoneAction(item.SDTDisplay)}</td>
+                    `;
+
+                    if (idx === 0) {
+                        let phoneDisplay = item.SDTChuTro ? `<span class="badge-phone-landlord">📞 ${renderPhoneAction(item.SDTChuTro)}</span>` : '';
+                        let landlordInfo = item.TenChuTroInfo !== 'Chưa xác định'
+                            ? `🏠 <b>${escapeHtml(item.TenChuTroInfo)}</b><br><span class="badge-chu-ho-sub">(Chủ hộ số: ${escapeHtml(item.MaHoChuTro)})</span>${phoneDisplay}`
+                            : `<i style="color:#94a3b8;">Chưa ghép chủ</i>`;
+
+                        html += `
+                            <td rowspan="${rowSpan}" class="cell-merged-landlord">${landlordInfo}</td>
+                            <td rowspan="${rowSpan}" style="vertical-align:middle;">${escapeHtml(item.DiaChi)}</td>
+                        `;
+                    }
+                    html += '</tr>';
+                });
+            }
+
+        } else {
+            html +=
+                '<th style="width:40px;">STT</th>' +
+                '<th style="width:60px;">Mã Hộ</th>' +
+                '<th>Họ và Tên</th>' +
+                '<th>Vai trò / Quan hệ trong hộ</th>' +
+                '<th style="width:80px;">Ngày Sinh</th>' +
+                '<th style="width:40px;">Tuổi</th>' +
+                '<th style="width:50px;">Giới Tính</th>' +
+                '<th style="width:60px;">Cư Trú</th>' +
+                '<th style="width:100px;">Số CCCD/CMND</th>' +
+                '<th>Số Điện Thoại</th>' +
+                '<th>Địa Chỉ</th>' +
+                '<th>Phân Loại / Dân Tộc / Ghi Chú</th>' +
+                '</tr></thead><tbody>';
+
+            dataList.forEach((item, index) => {
+                let roleBadge = item.IsOwner
+                    ? '<span class="badge badge-chu-ho-main">Chủ hộ</span>'
+                    : '<span class="badge badge-thanh-vien">Thành viên</span>' +
+                      (item.TenChuHoInfo
+                          ? ` <span class="badge-chu-ho-sub">(Chủ hộ: ${escapeHtml(item.TenChuHoInfo)})</span>`
+                          : ` <span class="badge-chu-ho-sub">(Chưa có thông tin chủ hộ)</span>`);
+
+                let phoneNote = item.IsPhoneOwner ? ' <span class="badge-chu-ho-sub">(SĐT Chủ hộ)</span>' : '';
+                let dupClass = item.IsDuplicateCCCD ? 'class="duplicate-cccd"' : '';
+                let cccdBadge = item.IsDuplicateCCCD ? '<span class="badge badge-danger">Trùng</span>' : '';
+
+                html += `
+                    <tr ${dupClass}>
+                        <td>${index + 1}</td>
+                        <td><b>${escapeHtml(item.MaHo)}</b></td>
+                        <td><b>${escapeHtml(item.HoTen)}</b></td>
+                        <td>${roleBadge}</td>
+                        <td>${escapeHtml(item.NgaySinh)}</td>
+                        <td><span class="badge badge-age">${escapeHtml(item.Tuoi)}</span></td>
+                        <td>
+                            ${item.GioiTinh
+                                ? `<span class="badge ${item.GioiTinh === 'Nam' ? 'badge-nam' : 'badge-nu'}">${escapeHtml(item.GioiTinh)}</span>`
+                                : '<span style="color:#94a3b8;">Chưa xác định</span>'}
+                        </td>
+                        <td><span class="badge ${item.CuTru === 'Hộ khẩu' ? 'badge-hk' : 'badge-tt'}">${escapeHtml(item.CuTru)}</span></td>
+                        <td>${escapeHtml(item.CCCD) || '<i style="color:#dc2626;">(Chưa có)</i>'} ${cccdBadge}</td>
+                        <td>${renderPhoneAction(item.SDTDisplay)}${phoneNote}</td>
+                        <td>${escapeHtml(item.DiaChi)}</td>
+                        <td>${formatPhanLoaiBadges(item)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+
+    function renderAdult18Table(dataList, container) {
+        const complete = dataList.filter(item => item.NhomThongTin === 'Đầy đủ thông tin');
+        const incomplete = dataList.filter(item => item.NhomThongTin !== 'Đầy đủ thông tin');
+        let html = `<div style="margin-bottom:10px;font-size:12px;color:#334155;"><b>Tổng: ${dataList.length}</b> người từ đủ 18 tuổi | <span style="color:#166534;">Đầy đủ: ${complete.length}</span> | <span style="color:#c2410c;">Chưa đầy đủ: ${incomplete.length}</span></div>`;
+        html += '<table><thead><tr><th>STT</th><th>Họ và tên</th><th>Ngày sinh</th><th>Tuổi</th><th>Ấp</th><th>Địa chỉ thường trú</th><th>Địa chỉ tạm trú</th><th>Số điện thoại</th><th>Số CCCD</th><th>Ghi chú / thông tin còn thiếu</th></tr></thead><tbody>';
+        let index = 1;
+        const appendGroup = (items, label, incompleteGroup) => {
+            if (!items.length) return;
+            html += `<tr class="adult-group-row ${incompleteGroup ? 'incomplete' : ''}"><td colspan="10">${label} — ${items.length} người</td></tr>`;
+            items.forEach(item => {
+                const note = [item.GhiChu || '', item.ThieuThongTin || ''].filter(Boolean).join(' | ') || '—';
+                html += `<tr class="${item.IsDuplicateCCCD ? 'duplicate-cccd' : ''}">
+                    <td>${index++}</td><td><b>${escapeHtml(item.HoTen)}</b></td><td>${escapeHtml(item.NgaySinh || '')}</td>
+                    <td><span class="badge badge-age">${escapeHtml(item.TuoiChinhXac)}</span></td><td>${escapeHtml(item.Ap)}</td>
+                    <td>${escapeHtml(item.DiaChiThuongTru || '—')}</td><td>${escapeHtml(item.DiaChiTamTru || '—')}</td>
+                    <td>${renderPhoneAction(item.SDTDisplay)}</td><td>${escapeHtml(item.CCCD || '—')}</td><td>${escapeHtml(note)}</td>
+                </tr>`;
+            });
+        };
+        appendGroup(complete, 'NHÓM 1 — CÔNG DÂN CÓ ĐẦY ĐỦ THÔNG TIN CƯ TRÚ', false);
+        appendGroup(incomplete, 'NHÓM 2 — CÔNG DÂN CHƯA ĐẦY ĐỦ THÔNG TIN CƯ TRÚ', true);
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function formatPhanLoaiBadges(item) {
+        let res = [];
+
+        if (item.IsDangVien) {
+            let dangVienDetail = item.DangVienText ? `Đảng viên: ${escapeHtml(item.DangVienText)}` : 'Đảng viên';
+            res.push(`<span class="badge badge-dangvien">${dangVienDetail}</span>`);
+        }
+
+        if (item.IsNguoiCoCong) res.push('<span class="badge badge-nguoicocong">Người có công</span>');
+        if (item.IsKhoKhan) res.push('<span class="badge badge-khokhan">Hộ khó khăn</span>');
+        if (item.IsChuTro) res.push('<span class="badge badge-chu-tro">Chủ nhà trọ</span>');
+        if (item.DanToc && item.DanToc !== 'Kinh') res.push(`<span class="badge badge-dantoc">${escapeHtml(item.DanToc)}</span>`);
+        if (item.GhiChu) res.push(`<span>${escapeHtml(item.GhiChu)}</span>`);
+
+        return res.join(' ');
+    }
+
+
+    function filterTableByKeyword() {
+        const rawKeyword = document.getElementById('searchInput').value.trim();
+        if (!rawKeyword) { renderTable(currentActiveList); return; }
+
+        const normalizedKeyword = normalizeSearchText(rawKeyword);
+        const tokens = normalizedKeyword.split(/\s+/).filter(Boolean);
+        const digitsKeyword = rawKeyword.replace(/\D/g, '');
+
+        const filtered = currentActiveList.filter(item => {
+            const fields = currentTabIndex === 'ho'
+                ? [item.MaHo, item.TenChuHo, item.SDT, item.DiaChi, item.SoThanhVien]
+                : [
+                    item.HoTen, item.TenChuHoInfo, item.TenChuTroInfo, item.MaHo,
+                    item.MaHoChuTro, item.CCCD, item.SDTDisplay, item.SDTChuTro,
+                    item.DiaChi, item.DiaChiThuongTru, item.DiaChiTamTru, item.Ap, item.NhomThongTin,
+                    item.NgaySinh, item.Tuoi, item.TuoiChinhXac, item.GioiTinh, item.CuTru,
+                    item.DanToc, item.PhanLoaiGhiChu, item.DangVienText,
+                    item.DangVienChiBo, item.DangVien123, item.GhiChu
+                ];
+
+            const searchableText = normalizeSearchText(fields.filter(v => v !== null && v !== undefined).join(' '));
+            const allTokensMatch = tokens.every(token => searchableText.includes(token));
+            const phoneDigits = [item.SDT, item.SDTDisplay, item.SDTChuTro].filter(Boolean).join(' ').replace(/\D/g, '');
+            const phoneMatch = digitsKeyword.length >= 3 && phoneDigits.includes(digitsKeyword);
+            return allTokensMatch || phoneMatch;
+        });
+        renderTable(filtered);
+    }
+
+    function renderCharts(genderStats) {
+        if (barChartObj) barChartObj.destroy();
+        if (pieChartObj) pieChartObj.destroy();
+
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        barChartObj = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Mẫu giáo', 'Lớp 1', 'Lớp 6', 'Nhập ngũ', 'Cao tuổi', 'Đảng viên', 'Thuê trọ'],
+                datasets: [{
+                    label: 'Số lượng (Người)',
+                    data: [
+                        categorizedData.mauGiao.length,
+                        categorizedData.vaoLop1.length,
+                        categorizedData.vaoLop6.length,
+                        categorizedData.nhapNgu.length,
+                        categorizedData.caoTuoi.length,
+                        categorizedData.dangVien.length,
+                        categorizedData.nguoiTro.length
+                    ],
+                    backgroundColor: ['#0284c7', '#16a34a', '#2563eb', '#b91c1c', '#d97706', '#dc2626', '#0891b2']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        pieChartObj = new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: ['Nam', 'Nữ'],
+                datasets: [{
+                    data: [genderStats.nam, genderStats.nu],
+                    backgroundColor: ['#2563eb', '#db2777']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+
+    // ============================================================
+    // XUẤT EXCEL BẰNG EXCELJS
+    // ============================================================
+
+    function addDataToSheetExcelJS(worksheet, sheetTitle, dataList, tabType) {
+        worksheet.mergeCells('A1:L1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = sheetTitle.toUpperCase();
+        titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(1).height = 30;
+
+        worksheet.mergeCells('A2:L2');
+        const subTitleCell = worksheet.getCell('A2');
+        const todayStr = new Date().toLocaleDateString('vi-VN');
+        subTitleCell.value = `Ngày xuất báo cáo: ${todayStr}  |  Tổng cộng: ${dataList.length} bản ghi`;
+        subTitleCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF475569' } };
+        subTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(2).height = 18;
+
+        worksheet.getRow(3).height = 10;
+
+        let headers = [];
+        if (tabType === 'ho') {
+            headers = ['STT', 'Mã Hộ', 'Họ và Tên Chủ Hộ', 'Số Điện Thoại', 'Địa Chỉ', 'Số Nhân Khẩu'];
+        } else if (tabType === 'tro') {
+            headers = ['STT', 'Mã Hộ', 'Họ và Tên Người Trọ', 'Vai Trò', 'Ngày Sinh', 'Tuổi', 'Giới Tính', 'Cư Trú', 'Số CCCD/CMND', 'SĐT Người Trọ', 'Chủ Nhà Trọ (SĐT Chủ)', 'Địa Chỉ Thuê Trọ'];
+        } else {
+            headers = ['STT', 'Mã Hộ', 'Họ và Tên', 'Vai trò / Quan hệ trong hộ', 'Ngày Sinh', 'Tuổi', 'Giới Tính', 'Cư Trú', 'Số CCCD/CMND', 'Số Điện Thoại', 'Địa Chỉ', 'Phân Loại / Dân Tộc / Ghi Chú'];
+        }
+
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 25;
+
+        headerRow.eachCell(cell => {
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            };
+        });
+
+        if (tabType === 'ho') {
+            dataList.forEach((item, idx) => {
+                const row = worksheet.addRow([idx + 1, item.MaHo, item.TenChuHo, item.SDT, item.DiaChi, item.SoThanhVien]);
+                styleRow(row, item, 'ho');
+            });
+        } else if (tabType === 'tro') {
+            let groupedByLandlord = {};
+            dataList.forEach(item => {
+                let key = item.TenChuTroInfo + '_' + item.MaHoChuTro;
+                if (!groupedByLandlord[key]) groupedByLandlord[key] = [];
+                groupedByLandlord[key].push(item);
+            });
+
+            let globalIdx = 1;
+            let startRowIdx = 5;
+
+            for (let key in groupedByLandlord) {
+                let items = groupedByLandlord[key];
+                let groupStartRow = startRowIdx;
+
+                items.forEach(item => {
+                    let phoneStr = item.SDTChuTro ? ` - SĐT: ${item.SDTChuTro}` : '';
+                    let landlordInfo = item.TenChuTroInfo !== 'Chưa xác định'
+                        ? `${escapeHtml(item.TenChuTroInfo)} (Hộ ${escapeHtml(item.MaHoChuTro)})${phoneStr}`
+                        : 'Chưa ghép chủ';
+
+                    const row = worksheet.addRow([
+                        globalIdx++, item.MaHo, item.HoTen, 'Người thuê trọ', item.NgaySinh, item.Tuoi, item.GioiTinh, item.CuTru, item.CCCD, item.SDTDisplay, landlordInfo, item.DiaChi
+                    ]);
+                    styleRow(row, item, 'tro');
+                    startRowIdx++;
+                });
+
+                if (items.length > 1) {
+                    worksheet.mergeCells(`K${groupStartRow}:K${startRowIdx - 1}`);
+                    worksheet.mergeCells(`L${groupStartRow}:L${startRowIdx - 1}`);
+                }
+            }
+        } else {
+            dataList.forEach((item, idx) => {
+                let roleText = item.IsOwner
+                    ? 'Chủ hộ'
+                    : (item.TenChuHoInfo ? `Thành viên (Chủ hộ: ${escapeHtml(item.TenChuHoInfo)})` : 'Thành viên (Chưa có thông tin chủ hộ)');
+
+                let phoneText = item.SDTDisplay + (item.IsPhoneOwner ? ' (SĐT Chủ hộ)' : '');
+
+                const row = worksheet.addRow([
+                    idx + 1, item.MaHo, item.HoTen, roleText, item.NgaySinh, item.Tuoi, item.GioiTinh, item.CuTru, item.CCCD, phoneText, item.DiaChi, item.PhanLoaiGhiChu
+                ]);
+                styleRow(row, item, 'normal');
+            });
+        }
+
+        if (tabType === 'ho') {
+            worksheet.columns = [
+                { width: 8 }, { width: 12 }, { width: 28 }, { width: 18 }, { width: 35 }, { width: 15 }
+            ];
+        } else if (tabType === 'tro') {
+            worksheet.columns = [
+                { width: 8 }, { width: 10 }, { width: 25 }, { width: 16 }, { width: 14 }, { width: 8 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 32 }, { width: 35 }
+            ];
+        } else {
+            worksheet.columns = [
+                { width: 8 }, { width: 10 }, { width: 25 }, { width: 32 }, { width: 14 }, { width: 8 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 22 }, { width: 35 }, { width: 25 }
+            ];
+        }
+    }
+
+
+    function styleRow(row, item, type) {
+        row.height = 20;
+
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            cell.font = { name: 'Arial', size: 9 };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+
+            if (type === 'ho') {
+                if ([1, 2, 4, 6].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            } else {
+                if ([1, 2, 5, 6, 7, 8, 9].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            }
+
+            if (item && item.IsDuplicateCCCD) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+            } else if (item && item.IsOwner && type === 'normal') {
+                if (colNumber === 3 || colNumber === 4) {
+                    cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF1E40AF' } };
+                }
+            }
+        });
+    }
+
+
+
+    function ensureExportLibraries() {
+        if (typeof ExcelJS === 'undefined' || !ExcelJS.Workbook || typeof saveAs !== 'function') {
+            alert('Không tải được thư viện xuất Excel. Vui lòng kiểm tra kết nối Internet rồi tải lại trang.');
+            return false;
+        }
+        return true;
+    }
+
+    // ============================================================
+    // XUẤT FILE ĐÃ CHUẨN HÓA & CHƯA CHUẨN HÓA (MỚI)
+    // ============================================================
+
+    async function exportNormalizedExcel() {
+        if (!ensureExportLibraries()) return;
+        if (!categorizedData.chuanHoa || categorizedData.chuanHoa.length === 0) {
+            alert('Không có dữ liệu nhân khẩu đã chuẩn hóa!');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Đã Chuẩn Hóa');
+
+        addDataToSheetExcelJS(
+            worksheet,
+            'DANH SÁCH NHÂN KHẨU ĐÃ CHUẨN HÓA (CÓ CCCD)',
+            categorizedData.chuanHoa,
+            'all'
+        );
+
+        sanitizeWorkbookForExport(workbook);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        saveAs(new Blob([buffer]), `Danh_Sach_DA_CHUAN_HOA_${dateStr}.xlsx`);
+    }
+
+    async function exportUnnormalizedExcel() {
+        if (!ensureExportLibraries()) return;
+        if (!categorizedData.chuaChuanHoa || categorizedData.chuaChuanHoa.length === 0) {
+            alert('Không có dữ liệu nhân khẩu chưa chuẩn hóa!');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Chưa Chuẩn Hóa');
+
+        addDataToSheetExcelJS(
+            worksheet,
+            'DANH SÁCH NHÂN KHẨU CHƯA CHUẨN HÓA (THIẾU CCCD)',
+            categorizedData.chuaChuanHoa,
+            'all'
+        );
+
+        sanitizeWorkbookForExport(workbook);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        saveAs(new Blob([buffer]), `Danh_Sach_CHUA_CHUAN_HOA_${dateStr}.xlsx`);
+    }
+
+
+    // ============================================================
+    // XUẤT TAB HIỆN TẠI
+    // ============================================================
+
+    async function exportAdult18Excel() {
+        if (!ensureExportLibraries()) return;
+        const rows = getFilteredAdult18Data();
+        if (!rows.length) {
+            alert('Không có công dân từ đủ 18 tuổi trở lên để xuất!');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Phần mềm Quản lý dữ liệu dân cư';
+        workbook.subject = 'Danh sách công dân từ đủ 18 tuổi trở lên, phân theo ấp';
+        workbook.created = new Date();
+
+        // Khi chọn "Tất cả các ấp": tạo một sheet riêng cho từng ấp.
+        // Khi chọn một ấp cụ thể: chỉ tạo sheet của ấp đang chọn.
+        const groupedByAp = new Map();
+        rows.forEach(item => {
+            const apName = String(item.Ap || 'Chưa xác định').trim() || 'Chưa xác định';
+            if (!groupedByAp.has(apName)) groupedByAp.set(apName, []);
+            groupedByAp.get(apName).push(item);
+        });
+
+        const usedSheetNames = new Set();
+        const makeSafeSheetName = (rawName) => {
+            let name = String(rawName || 'Chưa xác định')
+                .replace(/[\\/*?:\[\]]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 31) || 'Chua xac dinh';
+            const base = name;
+            let suffix = 2;
+            while (usedSheetNames.has(name.toLocaleLowerCase('vi'))) {
+                const tail = ` (${suffix++})`;
+                name = base.slice(0, 31 - tail.length) + tail;
+            }
+            usedSheetNames.add(name.toLocaleLowerCase('vi'));
+            return name;
+        };
+
+        const headers = [
+            'STT', 'Họ và tên', 'Ngày sinh', 'Tuổi', 'Ấp',
+            'Địa chỉ thường trú', 'Địa chỉ tạm trú', 'Số điện thoại',
+            'Số CCCD', 'Ghi chú / thông tin còn thiếu'
+        ];
+
+        // Sắp xếp tên ấp tự nhiên: Ấp 2 đứng trước Ấp 12; các tên XTT4 vẫn giữ nguyên.
+        const apEntries = [...groupedByAp.entries()].sort((a, b) =>
+            a[0].localeCompare(b[0], 'vi', { numeric: true, sensitivity: 'base' })
+        );
+
+        apEntries.forEach(([apName, apRows]) => {
+            const worksheet = workbook.addWorksheet(makeSafeSheetName(apName));
+            worksheet.mergeCells('A1:J1');
+            const title = worksheet.getCell('A1');
+            title.value = `DANH SÁCH CÔNG DÂN TỪ ĐỦ 18 TUỔI TRỞ LÊN — ${apName.toUpperCase()}`;
+            title.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+            title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+            title.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getRow(1).height = 34;
+
+            worksheet.mergeCells('A2:J2');
+            const subTitle = worksheet.getCell('A2');
+            subTitle.value = `Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} | Địa bàn: ${apName} | Tổng: ${apRows.length} người`;
+            subTitle.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF475569' } };
+            subTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getRow(2).height = 20;
+            worksheet.addRow([]);
+
+            const header = worksheet.addRow(headers);
+            header.height = 34;
+            header.eachCell(cell => {
+                cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+
+            let stt = 1;
+            const writeGroup = (items, groupTitle, color) => {
+                if (!items.length) return;
+                const groupRow = worksheet.addRow([groupTitle]);
+                worksheet.mergeCells(`A${groupRow.number}:J${groupRow.number}`);
+                groupRow.height = 22;
+                groupRow.getCell(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+                groupRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+                groupRow.getCell(1).alignment = { vertical: 'middle' };
+
+                items.forEach(item => {
+                    const note = [item.GhiChu || '', item.ThieuThongTin || ''].filter(Boolean).join(' | ');
+                    const row = worksheet.addRow([
+                        stt++, item.HoTen || '', item.NgaySinh || '', item.TuoiChinhXac ?? '',
+                        item.Ap || apName, item.DiaChiThuongTru || '', item.DiaChiTamTru || '',
+                        item.SDTDisplay || '', item.CCCD || '', note
+                    ]);
+                    row.eachCell({ includeEmpty: true }, cell => {
+                        cell.font = { name: 'Arial', size: 9 };
+                        cell.alignment = { vertical: 'middle', wrapText: true };
+                        cell.border = {
+                            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                        };
+                    });
+                    // CCCD và số điện thoại phải được giữ dạng chuỗi, không mất số 0 đầu.
+                    row.getCell(8).numFmt = '@';
+                    row.getCell(9).numFmt = '@';
+                });
+            };
+
+            const completeRows = apRows.filter(x => x.NhomThongTin === 'Đầy đủ thông tin');
+            const incompleteRows = apRows.filter(x => x.NhomThongTin !== 'Đầy đủ thông tin');
+            writeGroup(completeRows, `NHÓM 1 — ĐẦY ĐỦ THÔNG TIN CƯ TRÚ (${completeRows.length} người)`, 'FF15803D');
+            writeGroup(incompleteRows, `NHÓM 2 — CHƯA ĐẦY ĐỦ THÔNG TIN CƯ TRÚ (${incompleteRows.length} người)`, 'FFC2410C');
+
+            worksheet.columns = [
+                { width: 8 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 16 },
+                { width: 35 }, { width: 35 }, { width: 20 }, { width: 20 }, { width: 38 }
+            ];
+            worksheet.views = [{ state: 'frozen', ySplit: 4 }];
+            worksheet.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+            worksheet.properties.defaultRowHeight = 20;
+        });
+
+        sanitizeWorkbookForExport(workbook);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const suffix = adult18ApFilter === 'ALL' ? 'Tat_Ca_Cac_Ap' : adult18ApFilter.replace(/[^\p{L}\p{N}_-]+/gu, '_');
+        saveAs(new Blob([buffer]), `Danh_Sach_Cong_Dan_Tu_Du_18_Tuoi_${suffix}_${dateStr}.xlsx`);
+    }
+
+    async function exportCurrentTabToExcelProfessional() {
+        if (!ensureExportLibraries()) return;
+        if (currentTabIndex === 'adult18') {
+            await exportAdult18Excel();
+            return;
+        }
+        if (!currentActiveList || currentActiveList.length === 0) {
+            alert('Không có dữ liệu để xuất!');
+            return;
+        }
+
+        const titleObj = {
+            'ho': 'Danh Sách Các Hộ Gia Đình',
+            'all': 'Tất Cả Nhân Khẩu',
+            'chuan_hoa': 'Danh Sách Nhân Khẩu Đã Chuẩn Hóa',
+            'chua_chuan_hoa': 'Danh Sách Nhân Khẩu Chưa Chuẩn Hóa',
+            'tro': 'Danh Sách Người Thuê Trọ (Ghép Theo Chủ Trọ)',
+            'dv': 'Danh Sách Đảng Viên',
+            'ncc': 'Danh Sách Người Có Công',
+            'kk': 'Danh Sách Hộ Khó Khăn',
+            'dt': 'Danh Sách Dân Tộc Thiểu Số',
+            0: 'Danh Sách Mẫu Giáo',
+            1: 'Danh Sách Vào Lớp 1',
+            2: 'Danh Sách Vào Lớp 6',
+            3: 'Danh Sách Nhập Ngũ',
+            4: 'Danh Sách Cao Tuổi'
+        };
+
+        const workbook = new ExcelJS.Workbook();
+        const sheetTitle = titleObj[currentTabIndex] || 'Danh Sách Dân Cư';
+        const worksheet = workbook.addWorksheet('Danh Sách');
+
+        addDataToSheetExcelJS(
+            worksheet,
+            sheetTitle,
+            currentActiveList,
+            currentTabIndex
+        );
+
+        sanitizeWorkbookForExport(workbook);
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `${sheetTitle}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+
+
+    // Chuyển chuỗi có thể bị Excel hiểu là công thức thành văn bản thuần.
+    // Áp dụng tập trung cho TẤT CẢ workbook trước khi ghi file.
+    function sanitizeWorkbookForExport(workbook) {
+        const dangerous = /^[\s\u0000-\u001F\u007F\uFEFF]*[=+\-@]/;
+        const safeText = value => typeof value === 'string' && dangerous.test(value) ? "'" + value : value;
+        workbook.eachSheet(worksheet => {
+            worksheet.eachRow({ includeEmpty: false }, row => {
+                row.eachCell({ includeEmpty: false }, cell => {
+                    const value = cell.value;
+                    if (typeof value === 'string') {
+                        const safe = safeText(value);
+                        if (safe !== value) { cell.value = safe; cell.quotePrefix = true; }
+                    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+                        if (Array.isArray(value.richText)) {
+                            value.richText = value.richText.map(part => ({ ...part, text: safeText(part.text) }));
+                            cell.value = value;
+                        } else if (typeof value.text === 'string') {
+                            value.text = safeText(value.text);
+                            cell.value = value;
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // ============================================================
+    // XUẤT TẤT CẢ
+    // ============================================================
+
+    async function exportAllToExcel() {
+        if (!ensureExportLibraries()) return;
+        if (!allPopulationData || allPopulationData.length === 0) {
+            alert('Chưa có dữ liệu dân cư để xuất tất cả!');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+
+        const sheetsConfig = [
+            { name: 'Danh Sách Hộ', title: 'Danh Sách Hộ Gia Đình', data: householdListData, type: 'ho' },
+            { name: 'Tất Cả Nhân Khẩu', title: 'Tất Cả Nhân Khẩu', data: allPopulationData, type: 'all' },
+            { name: 'Đã Chuẩn Hóa', title: 'Danh Sách Đã Chuẩn Hóa (Có CCCD)', data: categorizedData.chuanHoa, type: 'all' },
+            { name: 'Chưa Chuẩn Hóa', title: 'Danh Sách Chưa Chuẩn Hóa (Thiếu CCCD)', data: categorizedData.chuaChuanHoa, type: 'all' },
+            { name: 'Thuê Trọ', title: 'Danh Sách Người Thuê Trọ (Ghép Theo Chủ Trọ)', data: categorizedData.nguoiTro, type: 'tro' },
+            { name: 'Đảng Viên', title: 'Danh Sách Đảng Viên', data: categorizedData.dangVien, type: 'all' },
+            { name: 'Người Có Công', title: 'Danh Sách Người Có Công', data: categorizedData.nguoiCoCong, type: 'all' },
+            { name: 'Hộ Khó Khăn', title: 'Danh Sách Hộ Khó Khăn', data: categorizedData.khoKhan, type: 'all' },
+            { name: 'Dân Tộc TS', title: 'Danh Sách Dân Tộc Thiểu Số', data: categorizedData.danToc, type: 'all' },
+            { name: 'Mẫu Giáo', title: 'Danh Sách Mẫu Giáo', data: categorizedData.mauGiao, type: 'all' },
+            { name: 'Lớp 1', title: 'Danh Sách Vào Lớp 1', data: categorizedData.vaoLop1, type: 'all' },
+            { name: 'Lớp 6', title: 'Danh Sách Vào Lớp 6', data: categorizedData.vaoLop6, type: 'all' },
+            { name: 'Nhập Ngũ', title: 'Danh Sách Nhập Ngũ (Nam)', data: categorizedData.nhapNgu, type: 'all' },
+            { name: 'Cao Tuổi', title: 'Danh Sách Cao Tuổi', data: categorizedData.caoTuoi, type: 'all' }
+        ];
+
+        sheetsConfig.forEach(config => {
+            if (config.data && config.data.length > 0) {
+                const worksheet = workbook.addWorksheet(config.name);
+                addDataToSheetExcelJS(worksheet, config.title, config.data, config.type);
+            }
+        });
+
+        sanitizeWorkbookForExport(workbook);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        saveAs(new Blob([buffer]), `Tong_Hop_Du_Lieu_Dan_Cu_${dateStr}.xlsx`);
+    }
+
+</script>
+
+</body>
+</html>

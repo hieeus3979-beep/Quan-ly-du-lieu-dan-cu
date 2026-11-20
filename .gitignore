@@ -1,0 +1,14 @@
+# Khong dua du lieu dan cu/Excel that len GitHub
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.ods
+*.db
+*.sqlite
+*.jsonl
+# Tam va log
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
